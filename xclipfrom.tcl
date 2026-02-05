@@ -1,21 +1,23 @@
-#!/usr/bin/wish
+#!/usr/bin/env wish
 
 # We don't need a visible window.
 wm withdraw .
 
+encoding system utf-8
+
 set otherDisplay [lindex $argv 0]
-puts "proxying CLIPBOARD from $otherDisplay"
+set selection [lindex $argv 1]
 
 # This gets called when another process tries to paste from our selection.
 proc handleSelection {offset maxChars} {
-    global otherDisplay
-    puts "CLIPBOARD data requested"
-    variable result
-    # Grab the current clipboard contents from the *other* display.
-    # I would rather do this without fork/execing a subprocess, but I
-    # couldn't find a way to make tcl/tk talk to two X11 servers at once.
-    catch {exec xclip -display $otherDisplay -selection CLIPBOARD -o} result
-    return $result
+    global otherDisplay selection
+    variable status
+    try {
+        exec -keepnewline -ignorestderr {%%PREFIX%%/libexec/xclipsync/smart-xclip-out.sh} ${otherDisplay} ${selection}
+    } trap CHILDSTATUS {results options} {
+        set status [lindex [dict get $options -errorcode] 2]
+        exit $status
+    }
 }
 
 # This gets called when we lose ownership of the clipboard, which generally
@@ -25,14 +27,13 @@ proc handleSelection {offset maxChars} {
 # copied data on this display to the now-obsolete clipboard on the other
 # display.
 proc lostSelection {} {
-    puts "lost selection\n"
     exit 0
 }
 
 # If we get asked for clipboard data, this is what we provide.
-selection handle -selection CLIPBOARD . handleSelection
+selection handle -selection ${selection} . handleSelection
 
-# Take ownership of the clipboard, so it someone wants to paste, they
+# Take ownership of the clipboard, so if someone wants to paste, they
 # come to us first.  We get called if someone else subsequently takes
 # ownership.
-selection own -selection CLIPBOARD -command lostSelection .
+selection own -selection ${selection} -command lostSelection .

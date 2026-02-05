@@ -1,0 +1,122 @@
+.\"Copyright (c) 2026, Jesús Daniel Colmenares Oviedo <DtxdF@disroot.org>
+.\"All rights reserved.
+.\"
+.\"Redistribution and use in source and binary forms, with or without
+.\"modification, are permitted provided that the following conditions are met:
+.\"
+.\"* Redistributions of source code must retain the above copyright notice, this
+.\"  list of conditions and the following disclaimer.
+.\"
+.\"* Redistributions in binary form must reproduce the above copyright notice,
+.\"  this list of conditions and the following disclaimer in the documentation
+.\"  and/or other materials provided with the distribution.
+.\"
+.\"* Neither the name of the copyright holder nor the names of its
+.\"  contributors may be used to endorse or promote products derived from
+.\"  this software without specific prior written permission.
+.\"
+.\"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+.\"AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\"IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+.\"DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+.\"FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\"DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+.\"SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+.\"CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+.\"OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+.\"OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.Dd February 5, 2026
+.Dt XCLIPSYNC 1
+.Os
+.Sh NAME
+.Nm xclipsync
+.Nd Trivial tool for synchronizing the clipboard between two X11 sessions 
+.Sh SYNOPSIS
+.Nm
+.Fl v
+.Nm
+.Op Fl s Ar selection
+.Op Fl a Ar display
+.Fl b Ar display
+.Sh DESCRIPTION
+.Nm
+is a simple and lightweight script for synchronizing the clipboard between two
+X servers created, for example, by
+.Xr Xephyr 1
+or
+.Xr Xnest 1 Ns , or even for synchronizing the clipboard between the host and
+another X server.
+.Pp
+When started,
+.Nm
+calls
+.Xr xclip 1
+to attempt to synchronize the clipboard from
+.Sy server A
+to
+.Sy server B Ns , and continues silently if it fails. After this step, the
+magic begins.
+.Pp
+.Nm
+acquires ownership of the clipboard on
+.Sy server A Ns , and when someone on
+.Sy server A
+attempts to paste the clipboard, it sends the data from
+.Sy server B Ns . If someone else acquires the clipboard on
+.Sy server A Ns ,
+.Nm
+does the same thing, but now
+.Sy server B
+is
+.Sy server A
+and
+.Sy server A
+is
+.Sy server B Ns . This is done infinitely unless an error occurs or the process
+is terminated.
+.Pp
+Unlike a basic loop script that retrieves the clipboard from one server and
+simply sends the modified clipboard to another server,
+.Nm
+acquires ownership, so we paste on one server when it is truly necessary.
+Furthermore, there is no need to specify a delay between synchronizations.
+It is performed instantly and more intelligently.
+.Pp
+.Nm
+is also smart when it comes to automatically selecting the X clipboard target,
+as it supports images, plain text, rich text, and even binaries.
+.Nm
+attempts to guess the destination and selects by preference and in order:
+.Sy image/png Ns , Sy UTF8_STRING Ns , Sy TEXT Ns , Sy STRING Ns , Sy text/plain
+.Ns , Sy text/html Ns . If these guesses fail,
+.Nm
+tries the first matching type by preference and in order:
+.Sy image Ns , Sy text Ns . And if these guesses fail again, the last target
+returned by the X server is selected. And if, again, this does not work, the
+clipboard will be empty on the destination server.
+.Pp
+.Bl -tag -width xxx
+.It Fl v
+Display version information about
+.Nm Ns .
+.It Fl s Ar selection
+X clipboard selection.
+.Pp
+.Sy CLIPBOARD Ns , Sy PRIMARY Ns , and Sy SECONDARY No are the only valid options.
+.It Fl a Ar display
+Server A.
+.Pp
+If not specified, the
+.Ev DISPLAY
+environment variable is used, and if it is not defined,
+.Sy :0 No is used.
+.It Fl b Ar display
+Server B.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh SEE ALSO
+.Xr xclip 1
+.Xr Xserver 1
+.Sh AUTHORS
+.An Jesús Daniel Colmenares Oviedo Aq Mt DtxdF@disroot.org
