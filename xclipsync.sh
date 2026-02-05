@@ -41,7 +41,7 @@ main()
 {
     local _o
     local selection="CLIPBOARD"
-    local a_display="${DISPLAY:-0}"
+    local a_display="${DISPLAY:-:0}"
     local b_display=
 
     while getopts ":vs:a:b:" _o; do
