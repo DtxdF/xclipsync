@@ -31,21 +31,28 @@
 # We don't need a visible window.
 wm withdraw .
 
-encoding system utf-8
+fconfigure stdout -translation binary
 
 set otherDisplay [lindex $argv 0]
 set selection [lindex $argv 1]
 
+set cachedData ""
+set lastOffset -1
+
 # This gets called when another process tries to paste from our selection.
 proc handleSelection {offset maxChars} {
-    global otherDisplay selection
+    global otherDisplay selection cachedData lastOffset
     variable status
-    try {
-        exec -keepnewline -ignorestderr {%%PREFIX%%/libexec/xclipsync/smart-xclip-out.sh} ${otherDisplay} ${selection}
-    } trap CHILDSTATUS {results options} {
-        set status [lindex [dict get $options -errorcode] 2]
-        exit $status
+    # Avoid unnecessary execution of smart-xclip-out.sh when the data is very large.
+    if {$offset == 0} {
+        try {
+            set cachedData [exec -keepnewline -ignorestderr -- %%PREFIX%%/libexec/xclipsync/smart-xclip-out.sh ${otherDisplay} ${selection}]
+        } trap CHILDSTATUS {results options} {
+            set status [lindex [dict get $options -errorcode] 2]
+            exit $status
+        }
     }
+    return [string range $cachedData $offset [expr {$offset + $maxChars}]]
 }
 
 # This gets called when we lose ownership of the clipboard, which generally
@@ -58,8 +65,22 @@ proc lostSelection {} {
     exit 0
 }
 
-# If we get asked for clipboard data, this is what we provide.
-selection handle -selection ${selection} . handleSelection
+# Without this, this script can't handle multiple targets even when
+# smart-xclip-out.sh does.
+set supportedTargets {
+    UTF8_STRING 
+    STRING 
+    TEXT 
+    image/png 
+    image/jpeg 
+    image/bmp 
+    text/html 
+    text/plain
+}
+
+foreach target $supportedTargets {
+    selection handle -selection ${selection} -type $target . handleSelection
+}
 
 # Take ownership of the clipboard, so if someone wants to paste, they
 # come to us first.  We get called if someone else subsequently takes
