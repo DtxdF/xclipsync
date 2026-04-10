@@ -5,7 +5,7 @@ RM?=rm -f
 PREFIX?=/usr/local
 MANDIR?=${PREFIX}/share/man
 
-XCLIPSYNC_VERSION?=0.1.3
+XCLIPSYNC_VERSION?=0.2.0
 
 all: install
 
