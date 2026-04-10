@@ -41,11 +41,15 @@ main()
 {
     local _o
     local selection="CLIPBOARD"
+    local once=false
     local a_display="${DISPLAY:-:0}"
     local b_display=
 
-    while getopts ":vs:a:b:" _o; do
+    while getopts ":Ovs:a:b:" _o; do
         case "${_o}" in
+            O)
+                once=true
+                ;;
             v)
                 version
                 exit ${EX_OK}
@@ -89,8 +93,15 @@ main()
 
     unset DISPLAY
 
-    "%%PREFIX%%/libexec/xclipsync/smart-xclip-out.sh" "${a_display}" "${selection}" 2> /dev/null |
-        xclip -in -display "${b_display}" -selection "${selection}" 2> /dev/null
+    if ${once}; then
+        # In this case we don't ignore stderr.
+        "%%PREFIX%%/libexec/xclipsync/smart-xclip.sh" \
+            -a "${a_display}" -b "${b_display}" -s "${selection}"
+        exit $?
+    fi
+
+    "%%PREFIX%%/libexec/xclipsync/smart-xclip.sh" \
+        -a "${a_display}" -b "${b_display}" -s "${selection}" 2> /dev/null
 
     while :; do
         env DISPLAY="${a_display}" "%%PREFIX%%/libexec/xclipsync/xclipfrom" "${b_display}" "${selection}" || exit $?
@@ -109,7 +120,7 @@ usage()
 {
     cat << EOF
 usage: xclipsync -v
-       xclipsync [-s <CLIPBOARD|PRIMARY|SECONDARY>] [-a <display>] -b <display>
+       xclipsync [-O] [-s <CLIPBOARD|PRIMARY|SECONDARY>] [-a <display>] -b <display>
 EOF
 }
 

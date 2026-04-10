@@ -32,7 +32,7 @@
 # See https://www.w3.org/TR/clipboard-apis/#mandatory-data-types-x
 #
 SUPPORTED_TYPES="\
-image/png \
+image/png
 UTF8_STRING \
 TEXT \
 STRING \
@@ -40,15 +40,45 @@ text/plain \
 text/html"
 GUEST_TYPES="images text"
 
+# see sysexits(3)
+EX_USAGE=64
+
 main()
 {
-    local display="${1:-:0}"
-    local selection="${2:-CLIPBOARD}"
-    local targets target
+    local _o
+    local a_display=
+    local b_display=
+    local selection=
     local found=false
 
-    targets=`xclip -out -display "${display}" -target TARGETS -selection "${selection}"` || exit $?
+    while getopts ":a:b:s:" _o; do
+        case "${_o}" in
+            a)
+                a_display="${OPTARG}"
+                ;;
+            b)
+                b_display="${OPTARG}"
+                ;;
+            s)
+                selection="${OPTARG}"
+                ;;
+            *)
+                usage
+                exit ${EX_USAGE}
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))
 
+    if [ -z "${a_display}" -o -z "${selection}" ]; then
+        usage
+        exit ${EX_USAGE}
+    fi
+
+    local targets=
+    targets=`xclip -out -display "${a_display}" -target TARGETS -selection "${selection}"` || exit $?
+
+    local target
     for target in ${SUPPORTED_TYPES}; do
         if chklist "${targets}" "${target}"; then
             found=true
@@ -85,7 +115,12 @@ main()
         return 0
     fi
 
-    xclip -out -display "${display}" -target "${target}" -selection "${selection}" || exit $?
+    if [ -z "${b_display}" ]; then
+        xclip -out -display "${a_display}" -target "${target}" -selection "${selection}" || exit $?
+    else
+        xclip -out -display "${a_display}" -target "${target}" -selection "${selection}" |\
+            xclip -in -display "${b_display}" -target "${target}" -selection "${selection}" || exit $?
+    fi
 }
 
 chklist()
@@ -102,6 +137,11 @@ chklist()
     done
 
     return 1
+}
+
+usage()
+{
+    echo "smart-xclip.sh [-b <display>] -a <display> -s <selection>"
 }
 
 main "$@"

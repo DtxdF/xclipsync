@@ -31,6 +31,7 @@
 # We don't need a visible window.
 wm withdraw .
 
+encoding system utf-8
 fconfigure stdout -translation binary
 
 set otherDisplay [lindex $argv 0]
@@ -46,7 +47,7 @@ proc handleSelection {offset maxChars} {
     # Avoid unnecessary execution of smart-xclip-out.sh when the data is very large.
     if {$offset == 0} {
         try {
-            set cachedData [exec -keepnewline -ignorestderr -- %%PREFIX%%/libexec/xclipsync/smart-xclip-out.sh ${otherDisplay} ${selection}]
+            set cachedData [exec -keepnewline -ignorestderr -- %%PREFIX%%/libexec/xclipsync/smart-xclip.sh -a ${otherDisplay} -s ${selection}]
         } trap CHILDSTATUS {results options} {
             set status [lindex [dict get $options -errorcode] 2]
             exit $status
@@ -71,15 +72,12 @@ set supportedTargets {
     UTF8_STRING 
     STRING 
     TEXT 
-    image/png 
-    image/jpeg 
-    image/bmp 
     text/html 
     text/plain
 }
 
 foreach target $supportedTargets {
-    selection handle -selection ${selection} -type $target . handleSelection
+    selection handle -selection ${selection} -type $target -format UTF8_STRING . handleSelection
 }
 
 # Take ownership of the clipboard, so if someone wants to paste, they

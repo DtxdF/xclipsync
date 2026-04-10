@@ -25,7 +25,7 @@
 .\"CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 .\"OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 .\"OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-.Dd February 5, 2026
+.Dd April 9, 2026
 .Dt XCLIPSYNC 1
 .Os
 .Sh NAME
@@ -35,6 +35,7 @@
 .Nm
 .Fl v
 .Nm
+.Op Fl O
 .Op Fl s Ar selection
 .Op Fl a Ar display
 .Fl b Ar display
@@ -93,9 +94,25 @@ attempts to guess the destination and selects by preference and in order:
 tries the first matching type by preference and in order:
 .Sy image Ns , Sy text Ns . And if these guesses fail again, the last target
 returned by the X server is selected. And if, again, this does not work, the
-clipboard will be empty on the destination server.
+clipboard will be empty on the destination server. However, see the
+.Fl O
+flag below for a well-known limitation of Tcl/Tk.
 .Pp
 .Bl -tag -width xxx
+.It Fl O
+Although this tool does its best to guess the format and succeeds 99% of the
+time, the Tcl/Tk
+.Sy selection handle
+command has no way of informing the requester the target, so it will always
+paste the data as text.
+.Xr xclip 1
+does not have this limitation, but it is necessary to first detect the target
+on both sides, both at the input and at the output. This shouldn’t be a major
+issue, since in most cases all that's really needed is text.
+.Pp
+When this flag is set, the clipboard is synchronized from server A to server B
+and closed immediately, without ignoring stderr as happens when this option
+isn't set.
 .It Fl v
 Display version information about
 .Nm Ns .

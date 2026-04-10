@@ -1,10 +1,10 @@
 NAME
-     xclipsync – Trivial tool for synchronizing the clipboard between two X11
+     xclipsync - Trivial tool for synchronizing the clipboard between two X11
      sessions
 
 SYNOPSIS
      xclipsync -v
-     xclipsync [-s selection] [-a display] -b display
+     xclipsync [-O] [-s selection] [-a display] -b display
 
 DESCRIPTION
      xclipsync is a simple and lightweight script for synchronizing the
@@ -37,7 +37,20 @@ DESCRIPTION
      matching type by preference and in order: image, text. And if these
      guesses fail again, the last target returned by the X server is selected.
      And if, again, this does not work, the clipboard will be empty on the
-     destination server.
+     destination server. However, see the -O flag below for a well-known
+     limitation of Tcl/Tk.
+
+     -O   Although this tool does its best to guess the format and succeeds
+	  99% of the time, the Tcl/Tk selection handle command has no way of
+	  informing the requester the target, so it will always paste the data
+	  as text.  xclip(1) does not have this limitation, but it is
+	  necessary to first detect the target on both sides, both at the
+	  input and at the output. This shouldn't be a major issue, since in
+	  most cases all that's really needed is text.
+
+	  When this flag is set, the clipboard is synchronized from server A
+	  to server B and closed immediately, without ignoring stderr as
+	  happens when this option isn't set.
 
      -v   Display version information about xclipsync.
 
@@ -62,4 +75,4 @@ SEE ALSO
      xclip(1) Xserver(1)
 
 AUTHORS
-     Jesús Daniel Colmenares Oviedo <DtxdF@disroot.org>
+     Jesus Daniel Colmenares Oviedo <DtxdF@disroot.org>
